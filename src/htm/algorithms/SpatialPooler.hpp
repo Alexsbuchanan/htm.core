@@ -63,6 +63,9 @@ static const int DISABLED = -1; //value denoting a feature is disabled
 class SpatialPooler : public Serializable
 {
 public:
+  static const constexpr Real BOOSTING_DISABLED = 0.0f;
+  static const constexpr Real BOOSTING_LOG      = -1234.0f;
+
   SpatialPooler();
   SpatialPooler(const vector<UInt> inputDimensions, const vector<UInt> columnDimensions,
                 UInt potentialRadius = 16u, Real potentialPct = 0.5f,
@@ -185,13 +188,21 @@ public:
         boost. Shorter values make it potentially more unstable and
         likely to oscillate.
 
-  @param boostStrength A number greater or equal than 0, used to
-        control boosting strength. 
-	No boosting is applied if it is set to 0.0, (runs faster due to skipped code).
-        The strength of boosting increases as a function of boostStrength.
-        Boosting encourages columns to have similar activeDutyCycles as their
-        neighbors, which will lead to more efficient use of columns. However,
-        too much boosting may also lead to instability of SP outputs.
+  @param boostStrength A number used to control boosting strength coeficient, 
+	 and mode of operation based on (reserved) values:
+	- `== SpatialPooler::BOOSTING_DISABLED`:
+	No boosting is applied if it is set, (runs faster due to skipped code).
+	- `== SpatialPooler::BOOSTING_LOG`:
+	Logarithmic boosting is used.
+	- `> 0.0`: 
+	Exponential boosting (default in Numenta) selected. `boostStrength` is 
+	used as a multiplacation constant.
+        The strength of boosting increases as a function of `boostStrength`.
+
+        Boosting encourages columns to have similar `activeDutyCycles` (aka. activation
+        frequencies) as their neighbors, which will lead to more efficient use of columns. 
+	This helps achieving the target sparsity of the output.
+	However, too much boosting may also lead to instability of SP outputs.
 
 
   @param seed Seed for our random number generator. If seed is < 0
