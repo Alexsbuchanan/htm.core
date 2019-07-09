@@ -35,8 +35,6 @@ namespace htm {
 
 using namespace std;
 
-static const int DISABLED = -1; //value denoting a feature is disabled
-
 /**
  * CLA spatial pooler implementation in C++.
  *
@@ -63,19 +61,30 @@ static const int DISABLED = -1; //value denoting a feature is disabled
 class SpatialPooler : public Serializable
 {
 public:
+  static const constexpr Real DISABLED = -1.0f; //value denoting a feature is disabled
+  //boosting modes:
   static const constexpr Real BOOSTING_DISABLED = 0.0f;
-  static const constexpr Real BOOSTING_LOG      = -1234.0f;
+  static const constexpr Real BOOSTING_LOG      = -1.0f * htm::Epsilon; //negative value closest to 0, so it's possible to search <BOOSTING_LOG, (DISABLED=0.0),..10.0> in parameter optimization to try all 3 combinations of boosting. 
+  static const constexpr Real BOOSTING_EXP      = 1.0f * htm::Epsilon; //any value > BOOSTING_DISABLED enables the exponential boosting mode
 
   SpatialPooler();
-  SpatialPooler(const vector<UInt> inputDimensions, const vector<UInt> columnDimensions,
-                UInt potentialRadius = 16u, Real potentialPct = 0.5f,
-                bool globalInhibition = true, Real localAreaDensity = DISABLED,
+  SpatialPooler(const vector<UInt> inputDimensions, 
+		const vector<UInt> columnDimensions,
+                UInt potentialRadius = 16u, 
+		Real potentialPct = 0.5f,
+                bool globalInhibition = true, 
+		Real localAreaDensity = DISABLED,
                 Int numActiveColumnsPerInhArea = 10u,
-                UInt stimulusThreshold = 0u, Real synPermInactiveDec = 0.008f,
-                Real synPermActiveInc = 0.05f, Real synPermConnected = 0.1f,
+                UInt stimulusThreshold = 0u, 
+		Real synPermInactiveDec = 0.008f,
+                Real synPermActiveInc = 0.05f, 
+		Real synPermConnected = 0.1f,
                 Real minPctOverlapDutyCycles = 0.001f,
-                UInt dutyCyclePeriod = 1000u, Real boostStrength = 0.0f,
-                Int seed = 1, UInt spVerbosity = 0u, bool wrapAround = true);
+                UInt dutyCyclePeriod = 1000u, 
+		Real boostStrength = BOOSTING_DISABLED,
+                Int seed = 1, 
+		UInt spVerbosity = 0u, 
+		bool wrapAround = true);
 
   virtual ~SpatialPooler() {}
 
@@ -203,6 +212,9 @@ public:
         frequencies) as their neighbors, which will lead to more efficient use of columns. 
 	This helps achieving the target sparsity of the output.
 	However, too much boosting may also lead to instability of SP outputs.
+
+	Notes:
+	- Log boosting does not require a parameter, but it is slower than exp.
 
 
   @param seed Seed for our random number generator. If seed is < 0
